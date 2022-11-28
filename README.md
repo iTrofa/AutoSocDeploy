@@ -1,0 +1,2 @@
+# AutoSocDeploy
+Automatic SOC Deployment
