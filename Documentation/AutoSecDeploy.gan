@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?><project name="AutoSecDeploy2" company="" webLink="" view-date="2022-09-19" view-index="0" gantt-divider-location="366" resource-divider-location="300" version="3.2.3247" locale="fr_FR">
+<?xml version="1.0" encoding="UTF-8"?><project name="AutoSecDeploy2" company="" webLink="" view-date="2022-10-24" view-index="0" gantt-divider-location="593" resource-divider-location="300" version="3.2.3247" locale="fr_FR">
     <description/>
     <view zooming-state="default:7" id="gantt-chart">
-        <field id="tpd3" name="Nom" width="209" order="0"/>
-        <field id="tpd4" name="Date de début" width="78" order="1"/>
-        <field id="tpd5" name="Date de fin" width="78" order="2"/>
+        <field id="tpd3" name="Nom" width="375" order="0"/>
+        <field id="tpd4" name="Date de début" width="90" order="1"/>
+        <field id="tpd5" name="Date de fin" width="127" order="2"/>
         <option id="filter.completedTasks" value="false"/>
         <timeline>
-            <![CDATA[1,3,10,4,0,2,17,9]]>
+            <![CDATA[0,1,2,4,9,17]]>
         </timeline>
         <option id="color.recent">
             <![CDATA[#ff3333 #cc6600 #00ffcc #66cc00 #ffff33 #0099ff #66ff66 #ffcccc #33ffff #f4f4f4]]>
@@ -44,43 +44,20 @@
         <task id="1" name="Constitution et validation des groupes et du sujet." color="#ffff33" meeting="false" start="2022-11-21" duration="10" complete="100" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true">
             <depend id="2" type="2" difference="0" hardness="Strong"/>
         </task>
-        <task id="2" name="Créer un dépôt GitHub, un Trello et la documentation" color="#ff3333" meeting="false" start="2022-12-05" duration="20" complete="100" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true">
-            <depend id="3" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="3" name="Splunk server fonctionnel avec Ansible" color="#33ffff" meeting="false" start="2023-01-02" duration="21" complete="0" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true"/>
-        <task id="4" name="Step 1" color="#8cb6ce" meeting="true" start="2023-01-31" duration="0" complete="0" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true">
-            <depend id="5" type="2" difference="0" hardness="Strong"/>
-            <depend id="6" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="5" name="Linux avec Honeypot" color="#8cb6ce" meeting="false" start="2023-01-31" duration="20" complete="0" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true">
-            <depend id="7" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="6" name="Windows avec Honeypot" color="#ffcccc" meeting="false" start="2023-01-31" duration="20" complete="0" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true">
-            <depend id="7" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="7" name="Début construction de règles, alertes sur splunk avec Ansible" color="#66ff66" meeting="false" start="2023-02-28" duration="20" complete="0" thirdDate="2022-11-14" thirdDate-constraint="0" expand="true">
-            <depend id="8" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="8" name="Auditd/ Sysmon configuré sur le Serveur Web et W10 client avec Ansible" color="#0099ff" meeting="false" start="2023-03-28" duration="24" complete="0" thirdDate="2022-11-14" thirdDate-constraint="0" expand="true"/>
-        <task id="9" name="Step 2" color="#8cb6ce" meeting="true" start="2023-05-01" duration="0" complete="0" thirdDate="2022-12-12" thirdDate-constraint="0" expand="true">
-            <depend id="10" type="2" difference="0" hardness="Strong"/>
-            <depend id="11" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="10" name="Construction de règles, alertes sur splunk avec Ansible" color="#ff3333" meeting="false" start="2023-05-01" duration="20" complete="0" thirdDate="2022-12-19" thirdDate-constraint="0" expand="true">
-            <depend id="12" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="11" name="Splunk server reçoit des logs des 2 machines" color="#0099ff" meeting="false" start="2023-05-01" duration="5" complete="0" thirdDate="2023-01-16" thirdDate-constraint="0" expand="true"/>
-        <task id="12" name="Début mise en place d'une solution qui test nos alertes Splunk" color="#ffff33" meeting="false" start="2023-05-29" duration="15" complete="0" thirdDate="2023-01-16" thirdDate-constraint="0" expand="true"/>
-        <task id="13" name="Step 3" color="#8cb6ce" meeting="true" start="2023-05-31" duration="0" complete="0" thirdDate="2023-02-13" thirdDate-constraint="0" expand="true">
-            <depend id="14" type="2" difference="0" hardness="Strong"/>
-            <depend id="15" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="14" name="Réalisation d'une analyse d'infra (nmap etc..)" color="#66cc00" meeting="false" start="2023-05-31" duration="15" complete="0" thirdDate="2023-02-13" thirdDate-constraint="0" expand="true"/>
-        <task id="15" name="Tester une attaque sur AD (smbexec ou autre ..)" color="#00ffcc" meeting="false" start="2023-05-31" duration="15" complete="0" thirdDate="2023-01-16" thirdDate-constraint="0" expand="true">
-            <depend id="16" type="2" difference="0" hardness="Strong"/>
-        </task>
-        <task id="16" name="Amélioration infra" color="#cc6600" meeting="false" start="2023-06-21" duration="10" complete="0" thirdDate="2023-02-27" thirdDate-constraint="0" expand="true"/>
-        <task id="17" name="Step 4" color="#8cb6ce" meeting="true" start="2023-06-30" duration="0" complete="0" thirdDate="2023-02-27" thirdDate-constraint="0" expand="true"/>
+        <task id="2" name="Créer un dépôt GitHub, un Trello et la documentation" color="#ff3333" meeting="false" start="2022-12-05" duration="10" complete="100" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true"/>
+        <task id="4" name="Step 1 - Deadline" color="#8cb6ce" meeting="true" start="2023-01-31" duration="0" complete="0" thirdDate="2022-10-10" thirdDate-constraint="0" expand="true"/>
+        <task id="19" name="Définir les exigences pour Splunk" color="#8cb6ce" meeting="false" start="2022-12-19" duration="3" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="20" name="Installer et configurer Ansible sur le serveur Splunk" color="#8cb6ce" meeting="false" start="2022-12-21" duration="4" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="21" name="Créer des playbooks Ansible pour installer et configurer Splunk" color="#8cb6ce" meeting="false" start="2022-12-26" duration="15" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="22" name="Tester la mise en place de Splunk" color="#8cb6ce" meeting="false" start="2023-01-13" duration="3" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="23" name="Installer et configurer un deuxième serveur Linux" color="#8cb6ce" meeting="false" start="2023-01-02" duration="7" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="24" name="Définir les exigences pour Splunk Forwarder Linux" color="#8cb6ce" meeting="false" start="2023-01-10" duration="3" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="25" name="Définir problématiques configuration Ansible à distance" color="#8cb6ce" meeting="false" start="2023-01-12" duration="7" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="26" name="Installer et configurer un serveur Windows 10 Pro" color="#8cb6ce" meeting="false" start="2022-12-26" duration="14" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="27" name="Définir les exigences pour Splunk Forwarder Windows" color="#8cb6ce" meeting="false" start="2023-01-13" duration="3" complete="0" thirdDate="2022-10-17" thirdDate-constraint="0" expand="true"/>
+        <task id="9" name="Step 2 - Deadline" color="#8cb6ce" meeting="true" start="2023-05-01" duration="0" complete="0" thirdDate="2022-12-12" thirdDate-constraint="0" expand="true"/>
+        <task id="13" name="Step 3 - Deadline" color="#8cb6ce" meeting="true" start="2023-05-31" duration="0" complete="0" thirdDate="2023-02-13" thirdDate-constraint="0" expand="true"/>
+        <task id="17" name="Step 4 - Deadline" color="#8cb6ce" meeting="true" start="2023-06-30" duration="0" complete="0" thirdDate="2023-02-27" thirdDate-constraint="0" expand="true"/>
         <task id="18" name="Soutenance Day" color="#ff3333" meeting="true" start="2023-07-07" duration="0" complete="0" thirdDate="2023-02-27" thirdDate-constraint="0" expand="true"/>
     </tasks>
     <resources/>
