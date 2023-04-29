@@ -1,0 +1,35 @@
+#!/bin/bash
+
+git clone https://github.com/aplura/Tango.git /tmp/tango; chmod +x /tmp/tango/uf_only.sh
+cd /tmp/tango/
+
+sed -i '126,139 s/^/#/' uf_only.sh
+sed -i '174,198 s/^/#/' uf_only.sh
+sed -i '204,211 s/^/#/' uf_only.sh
+
+# uf_only.sh doit être lancé en tant que root 
+ln -s /usr/bin/python3 /usr/bin/python
+
+# we will modify IP to make it dynamic
+
+expect <<EOF
+# Lancer le programme et attendre la première question
+spawn ./uf_only.sh
+
+expect "You are about to install Cowrie and the Splunk Universal Forwarder. By running this installer, you accept Splunk's EULA. Do you wish to proceed? (Yes/No)"
+send "Yes\r"
+
+# Attendre la deuxième question
+expect "Enter the Splunk Indexer to forward logs to: (example: splunk.test.com:9997) "
+send "192.168.7.135:9997\r"
+
+# Attendre la troisième question
+expect "Enter Sensor name: (example: hp-US-Las_Vegas-01) "
+send "cl-FR-Paris-01\r"
+
+# Attendre la quatrième question
+expect "Enter the full path to where your Cowrie logs are stored: (example:/opt/cowrie/log/)"
+send "/home/cowrie/cowrie/var/log/cowrie\r"
+
+# Attendre la sortie du programme
+expect eof

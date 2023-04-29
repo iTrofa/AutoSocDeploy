@@ -1,0 +1,429 @@
+apt install vim -y
+vim /etc/ssh/sshd_config
+# before script
+# uncomment permit root login ; et mettre yes
+service ssh restart
+
+#___ script____
+#!/bin/bash
+
+cat << EOF > .bashrc 
+
+PS1='\[\033[01;36m\]\t \[\033[01;31m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]$ '
+umask 022
+
+HISTCONTROL=ignoredups:ignorespace
+HISTFILESIZE=200000
+HISTSIZE=100000
+
+export PROMPT_COMMAND="history -a; history -n"
+
+export LS_OPTIONS='--color=auto'
+eval "LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:';
+export LS_COLORS"
+alias ls='ls $LS_OPTIONS'
+alias ll='ls  -l'
+alias l='ls  -lA'
+alias llh='ll -h'
+# Some more alias to avoid making mistakes:
+alias rm='rm -iv --preserve-root'
+alias cp='cp -iv'
+alias mv='mv -iv'
+alias chmod='chmod -v --preserve-root'
+alias chown='chown -v --preserve-root'
+alias mount='mount -v'
+alias umount='umount -flv'
+alias su='su -'
+alias c='clear'
+alias cls='clear'
+#figlet -c -f standard TROFA
+#echo ########################################################################
+alias plantu="netstat -plantu"
+alias rgrep="find . -type f|xargs grep -win --color"
+alias df="df -Th| grep -Ev '(udev|tmpfs)'"
+
+EOF
+source .bashrc
+
+
+
+# Update package lists
+apt-get update
+
+# Install necessary packages
+apt-get install -y software-properties-common
+apt-add-repository --yes --update ppa:ansible/ansible
+apt-get install -y ansible
+
+# Configure Ansible
+mkdir /etc/ansible
+touch /etc/ansible/hosts
+
+# Add localhost to inventory file
+echo "[localhost]" >> /etc/ansible/hosts
+echo "127.0.0.1" >> /etc/ansible/hosts
+
+
+cd /root/.ssh/
+ssh-keygen -t rsa -b 4096 -C "ansible" -f /root/.ssh/id_rsa -N ''
+mkdir authorized_keys
+cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+systemctl restart ssh
+
+
+# Test Ansible connection
+ansible localhost -m ping
+
+
+#snapshot starts here
+
+#might have to do this 
+#Unmount the filesystem: umount /home
+#Remove the logical volume: lvremove /dev/PA-vg/home
+#Recreate the logical volume with the correct size: lvcreate -L 20G -n home PA-vg
+#Create a new filesystem on the logical volume: mkfs.ext4 /dev/PA-vg/home
+#Mount the new filesystem: mount /dev/PA-vg/home /home
+
+mkdir /root/ansible_playbooks
+cd /root/ansible_playbooks/
+
+
+#### ansible playbooks
+
+#https://download.splunk.com/products/splunk/releases/9.0.4/linux/splunk-9.0.4-de405f4a7979-linux-2.6-amd64.deb
+#wget -O splunk-9.0.4-de405f4a7979-linux-2.6-amd64.deb "https://download.splunk.com/products/splunk/releases/9.0.4/linux/splunk-9.0.4-de405f4a7979-linux-2.6-amd64.deb"
+#wget -O splunkforwarder-9.0.4-de405f4a7979-x64-release.msi "https://download.splunk.com/products/universalforwarder/releases/9.0.4/windows/splunkforwarder-9.0.4-de405f4a7979-x64-release.msi"
+#wget -O splunkforwarder-9.0.4-de405f4a7979-linux-2.6-amd64.deb "https://download.splunk.com/products/universalforwarder/releases/9.0.4/linux/splunkforwarder-9.0.4-de405f4a7979-linux-2.6-amd64.deb"  
+
+# dependency
+apt install -y sudo
+apt install -y curl
+
+cat << EOF > splunk_install.yaml
+---
+- name: Installer Splunk
+  hosts: localhost
+  become: true
+  vars:
+    splunk_version: "9.0.4"
+    splunk_filename: "splunk-{{ splunk_version }}-de405f4a7979-linux-2.6-amd64.deb"
+    splunk_download_url: "https://download.splunk.com/products/splunk/releases/{{ splunk_version }}/linux/{{ splunk_filename }}"
+
+  tasks:
+    # Installer les dépendances nécessaires pour l'installation de Splunk
+    - name: Installer les dépendances pour Splunk
+      apt:
+        name: ["apt-transport-https", "ca-certificates", "wget", "gnupg2"]
+        state: present
+
+    # Télécharger le package d'installation de Splunk à partir du site web de Splunk
+    - name: Télécharger le package d'installation de Splunk
+      get_url:
+        url: "{{ splunk_download_url }}"
+        dest: "/tmp/{{ splunk_filename }}"
+
+    # Extraire le package d'installation de Splunk
+    - name: Extraire le package d'installation de Splunk
+      command: dpkg -i /tmp/{{ splunk_filename }}
+
+    # Installer Splunk
+    - name: Installer Splunk
+      command: /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Admin123
+
+    # Configurer Splunk
+    - name: Configurer Splunk
+      command: /opt/splunk/bin/splunk enable boot-start
+
+    - name: Vérifier si le répertoire existe
+      stat:
+        path: /opt/splunk/etc/apps/search/local
+      register: dir_result
+
+    - name: Créer le répertoire s'il n'existe pas
+      file:
+        path: /opt/splunk/etc/apps/search/local
+        state: directory
+      when: not dir_result.stat.exists
+
+    # Vérifier si le fichier inputs.conf existe
+    - name: Vérifier si le fichier inputs.conf existe
+      stat:
+        path: /opt/splunk/etc/apps/search/local/inputs.conf
+      register: file_result
+
+    - name: Créer le fichier inputs.conf s'il n'existe pas
+      copy:
+        content: |
+         [splunktcp://9997]
+         connection_host = ip
+        dest: /opt/splunk/etc/apps/search/local/inputs.conf
+      when: not file_result.stat.exists
+EOF
+
+ansible-playbook splunk_install.yaml
+
+# enter the name/ip of the remote host
+
+cat << EOF > remote_splunk_forwarder.yaml
+---
+- name: Installer le forwarder Splunk
+  hosts: my_servers
+  become: true
+  vars:
+    splunkforwarder_version: "9.0.4"
+    splunkforwarder_filename: "splunkforwarder-{{ splunkforwarder_version }}-de405f4a7979-linux-2.6-amd64.deb"
+    splunkforwarder_download_url: "https://download.splunk.com/products/universalforwarder/releases/{{ splunkforwarder_version }}/linux/{{ splunkforwarder_filename }}"
+
+  tasks:
+    # Installer les dépendances nécessaires pour l'installation du forwarder Splunk
+    - name: Installer les dépendances pour le forwarder Splunk
+      apt:
+        name: ["apt-transport-https", "ca-certificates", "wget", "gnupg2"]
+        state: present
+
+    # Télécharger le package d'installation du forwarder Splunk à partir du site web de Splunk
+    - name: Télécharger le package d'installation du forwarder Splunk
+      get_url:
+        url: "{{ splunkforwarder_download_url }}"
+        dest: "/tmp/{{ splunkforwarder_filename }}"
+
+    # Installer le forwarder Splunk
+    - name: Installer ou reinstaller le forwarder Splunk
+      apt:
+        deb: "/tmp/{{ splunkforwarder_filename }}"
+        state: present
+   
+EOF
+
+
+
+
+# make ansible connect over ssh key
+
+cd /root/.ssh/
+ssh-copy-id -f victim@172.24.81.33 #make it automatically, add password.
+cat << EOF > /etc/ansible/hosts
+[localhost]
+127.0.0.1
+[my_servers]
+server1 ansible_host=172.24.81.33 ansible_user=victim ansible_ssh_private_key_file=~/.ssh/id_rsa
+EOF
+
+cat << EOF > /etc/ansible/ansible.cfg
+[defaults]
+become_password=root
+EOF
+
+
+apt install -y expect
+
+password="root"
+expect -c "
+spawn ansible-playbook remote_splunk_forwarder.yaml -K
+expect \"BECOME password:\"
+send \"$password\n\"
+interact
+"
+
+
+# make sure /opt/splunkforwarder is not already installed in remote machine because apt doesn't reinstall it. 
+
+cat << EOF > splunk_config.yaml
+- hosts: all
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - openssl
+          - libssl-dev
+          - libffi-dev
+          - curl
+        state: present
+      become: true
+
+    - name: Set up outputs.conf
+      copy:
+        dest: /opt/splunkforwarder/etc/system/local/outputs.conf
+        content: |
+          [tcpout]
+          defaultGroup = default-autolb-group
+
+          [tcpout:default-autolb-group]
+          server = 172.24.81.35:9997
+
+          [tcpout-server://172.24.81.35:9997]
+      become: true
+
+    - name: Accept Splunk Forwarder license
+      command: /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Admin123
+      become: true
+EOF
+
+
+cat << EOF > my_inventory.yaml
+all:
+  hosts:
+    server1:
+      ansible_host: 172.24.81.33
+      ansible_user: victim
+      ansible_ssh_private_key_file: ~/.ssh/id_rsa
+EOF
+
+ansible-playbook splunk_config.yaml -i my_inventory.yaml -u victim -K
+
+
+
+cat << EOF > auditd.yaml 
+---
+- name: Install and configure Auditd
+  hosts: server1
+  become: true
+
+  tasks:
+    - name: Install Auditd
+      apt:
+        name: auditd
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Install Auditd
+      yum:
+        name: auditd
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Configure Auditd rules for web server logs and SSH logs
+      copy:
+        dest: /etc/audit/rules.d/web-server.rules
+        content: |
+          -a always,exit -F path=/var/log/apache2/access.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k web-access-log
+          -a always,exit -F path=/var/log/apache2/error.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k web-error-log
+          -a always,exit -F path=/var/log/auth.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k ssh-log
+
+    - name: Restart Auditd service
+      service:
+        name: auditd
+        state: restarted
+    - name: Configure Splunk Forwarder to monitor Audit log
+      blockinfile:
+        path: /opt/splunkforwarder/etc/system/default/inputs.conf
+        block: |
+          [monitor:///var/log/audit/audit.log]
+          disabled = false
+          index = main
+          sourcetype = linux_auditd
+		  
+    - name: Restart Splunk Forwarder
+      command: /opt/splunkforwarder/bin/splunk restart
+EOF
+
+
+password="root"
+expect -c "
+spawn ansible-playbook -i my_inventory.yaml auditd.yaml --ask-become-pass
+expect \"BECOME password:\"
+send \"$password\n\"
+interact
+"
+
+### installation de l'honeypot Cowrie à lancer dans l'hote distant ###
+
+cat << EOF > cowrie.sh
+#!/bin/bash
+
+# Installer les dépendances Cowrie
+apt update
+apt install -y git python3-virtualenv iptables expect
+
+# On change le port SSH
+sed -i 's/^#Port 22/Port 1234/' /etc/ssh/sshd_config
+service ssh restart 
+
+# Créer l'utilisateur Cowrie
+adduser --disabled-password --gecos "" cowrie
+
+su cowrie -
+
+# Cloner le dépôt Cowrie
+git clone https://github.com/cowrie/cowrie
+
+cd cowrie
+virtualenv cowrie-env
+source cowrie-env/bin/activate
+pip install -r requirements.txt
+
+# Configurer Cowrie
+cp etc/cowrie.cfg.dist etc/cowrie.cfg
+
+# change ssh port to other than 22
+#iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222
+
+# Démarrer la configuration de Cowrie
+./bin/cowrie start
+./bin/cowrie adduser
+EOF
+
+
+cat << EOF > tango.sh
+git clone https://github.com/aplura/Tango.git /tmp/tango; chmod +x /tmp/tango/uf_only.sh
+cd /tmp/tango/
+
+sed -i '126,139 s/^/#/' uf_only.sh
+sed -i '174,198 s/^/#/' uf_only.sh
+sed -i '204,211 s/^/#/' uf_only.sh
+
+# uf_only.sh doit être lancé en tant que root 
+ln -s /usr/bin/python3 /usr/bin/python
+
+expect <<EOF
+# Lancer le programme et attendre la première question
+spawn ./uf_only.sh
+
+expect "You are about to install Cowrie and the Splunk Universal Forwarder. By running this installer, you accept Splunk's EULA. Do you wish to proceed? (Yes/No)"
+send "Yes\r"
+
+# Attendre la deuxième question
+expect "Enter the Splunk Indexer to forward logs to: (example: splunk.test.com:9997) "
+send "192.168.7.135:9997\r"
+
+# Attendre la troisième question
+expect "Enter Sensor name: (example: hp-US-Las_Vegas-01) "
+send "cl-FR-Paris-01\r"
+
+# Attendre la quatrième question
+expect "Enter the full path to where your Cowrie logs are stored: (example:/opt/cowrie/log/)"
+send "/home/cowrie/cowrie/var/log/cowrie\r"
+
+# Attendre la sortie du programme
+expect eof
+EOF
+
+
+# in splunk server
+
+cd /tmp
+wget -O tango-honeypot-intelligence_21.tgz 'https://cdn.splunkbase.splunk.com/media/private/signed_2666_4252_1668452792.tgz?response-content-disposition=attachment%3Bfilename%3D%22tango-honeypot-intelligence_21.tgz%22&Expires=1680597943&Signature=JExzhr6nwd1FQH8sePsAbQ~LGbe3sNujBgvf2mo~Kdqkd8jo4kB830DQ433TNgaCyJleKxTpdnwAkQIDCODZK8MNfT-bHp10af54IbzaPX-PT7qYdBuLe5mYwTRaePT9JwUpaw-WXjURoYDDDJz52Vt90cnMG~CheY~R-j2dBREeLha-vY0YD0gzbvJM4eqX0eoTxvk3Mdd0RZaEOUWVrfo41l7w8CwkaCfz3mshe1T8NDRqJ3En2DQK8MV74Futv~9ZdnNTngzWvZM5NkezEUMszrG~5GuIGguDbp1VwR2-2TW0RvzaiHjkjxMv2bdsM2gLDIb-5vR3JKwIylpoUw__&Key-Pair-Id=K3GLBBC7R7U34X'
+
+
+cat << EOF > tango.yaml
+- name: Install Tango Honeypot Intelligence addon
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Extract addon file
+      unarchive:
+        src: /tmp/tango-honeypot-intelligence_21.tgz
+        dest: /opt/splunk/etc/apps/
+        creates: /opt/splunk/etc/apps/tango
+      become: true
+      become_user: splunk
+
+    - name: Change ownership of tango directory
+      file:
+        path: /opt/splunk/etc/apps/tango
+        owner: splunk
+        group: splunk
+        recurse: yes
+
+EOF

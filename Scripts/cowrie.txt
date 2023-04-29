@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Installer les dépendances Cowrie
+apt update
+apt install -y git python3-virtualenv iptables expect
+
+# On change le port SSH
+sed -i 's/^#Port 22/Port 1234/' /etc/ssh/sshd_config
+service ssh restart 
+
+# Créer l'utilisateur Cowrie
+adduser --disabled-password --gecos "" cowrie
+
+su cowrie -
+
+# Cloner le dépôt Cowrie
+git clone https://github.com/cowrie/cowrie
+
+cd cowrie
+virtualenv cowrie-env
+source cowrie-env/bin/activate
+pip install -r requirements.txt
+
+# Configurer Cowrie
+cp etc/cowrie.cfg.dist etc/cowrie.cfg
+
+# change ssh port to other than 22
+#iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222
+
+# Démarrer la configuration de Cowrie
+./bin/cowrie start
+./bin/cowrie adduser

@@ -1,0 +1,28 @@
+- hosts: all
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - openssl
+          - libssl-dev
+          - libffi-dev
+          - curl
+        state: present
+      become: true
+
+    - name: Set up outputs.conf
+      copy:
+        dest: /opt/splunkforwarder/etc/system/local/outputs.conf
+        content: |
+          [tcpout]
+          defaultGroup = default-autolb-group
+
+          [tcpout:default-autolb-group]
+          server = 172.24.81.35:9997
+
+          [tcpout-server://172.24.81.35:9997]
+      become: true
+
+    - name: Accept Splunk Forwarder license
+      command: /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Admin123
+      become: true

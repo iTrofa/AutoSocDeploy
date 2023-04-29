@@ -1,0 +1,28 @@
+---
+- name: Installer le forwarder Splunk
+  hosts: my_servers
+  become: true
+  vars:
+    splunkforwarder_version: "9.0.4"
+    splunkforwarder_filename: "splunkforwarder-{{ splunkforwarder_version }}-de405f4a7979-linux-2.6-amd64.deb"
+    splunkforwarder_download_url: "https://download.splunk.com/products/universalforwarder/releases/{{ splunkforwarder_version }}/linux/{{ splunkforwarder_filename }}"
+
+  tasks:
+    # Installer les dépendances nécessaires pour l'installation du forwarder Splunk
+    - name: Installer les dépendances pour le forwarder Splunk
+      apt:
+        name: ["apt-transport-https", "ca-certificates", "wget", "gnupg2"]
+        state: present
+
+    # Télécharger le package d'installation du forwarder Splunk à partir du site web de Splunk
+    - name: Télécharger le package d'installation du forwarder Splunk
+      get_url:
+        url: "{{ splunkforwarder_download_url }}"
+        dest: "/tmp/{{ splunkforwarder_filename }}"
+
+    # Installer le forwarder Splunk
+    - name: Installer ou reinstaller le forwarder Splunk
+      apt:
+        deb: "/tmp/{{ splunkforwarder_filename }}"
+        state: present
+   

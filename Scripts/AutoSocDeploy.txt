@@ -1,0 +1,138 @@
+#!/bin/bash
+
+cat << EOF > .bashrc 
+
+PS1='\[\033[01;36m\]\t \[\033[01;31m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]$ '
+umask 022
+
+HISTCONTROL=ignoredups:ignorespace
+HISTFILESIZE=200000
+HISTSIZE=100000
+
+export PROMPT_COMMAND="history -a; history -n"
+
+export LS_OPTIONS='--color=auto'
+eval "LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:';
+export LS_COLORS"
+alias ls='ls $LS_OPTIONS'
+alias ll='ls  -l'
+alias l='ls  -lA'
+alias llh='ll -h'
+# Some more alias to avoid making mistakes:
+alias rm='rm -iv --preserve-root'
+alias cp='cp -iv'
+alias mv='mv -iv'
+alias chmod='chmod -v --preserve-root'
+alias chown='chown -v --preserve-root'
+alias mount='mount -v'
+alias umount='umount -flv'
+alias su='su -'
+alias c='clear'
+alias cls='clear'
+#figlet -c -f standard TROFA
+#echo ########################################################################
+alias plantu="netstat -plantu"
+alias rgrep="find . -type f|xargs grep -win --color"
+alias df="df -Th| grep -Ev '(udev|tmpfs)'"
+
+EOF
+source .bashrc
+
+# Update package lists
+apt-get update
+
+# Install necessary packages
+apt-get install -y software-properties-common
+apt-add-repository --yes --update ppa:ansible/ansible
+apt-get install -y ansible
+
+# Configure Ansible
+mkdir /etc/ansible
+touch /etc/ansible/hosts
+
+# Add localhost to inventory file
+echo "[localhost]" >> /etc/ansible/hosts
+echo "127.0.0.1" >> /etc/ansible/hosts
+
+cd /root/.ssh/
+ssh-keygen -t rsa -b 4096 -C "ansible" -f /root/.ssh/id_rsa -N ''
+mkdir authorized_keys
+cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+systemctl restart ssh
+
+mkdir /root/ansible_playbooks
+cd /root/ansible_playbooks/
+
+# Ansible dependencies
+
+apt install -y sudo
+apt install -y curl
+
+#Install Splunk
+
+ansible-playbook splunk_install.yaml
+
+# Here we will ask for ip of remote host
+
+# make ansible connect over ssh key
+# we will enter the IP we got before here (have to make sure we can access as root)
+
+cd /root/.ssh/
+ssh-copy-id -f victim@172.24.81.33 #make it automatically, add password.
+cat << EOF > /etc/ansible/hosts
+[localhost]
+127.0.0.1
+[my_servers]
+server1 ansible_host=172.24.81.33 ansible_user=victim ansible_ssh_private_key_file=~/.ssh/id_rsa
+EOF
+
+
+cat << EOF > /etc/ansible/ansible.cfg
+[defaults]
+become_password=root
+EOF
+
+
+apt install -y expect
+
+# Install Linux Forwarder
+# Instead of having the password in plaintext we will ask the user to enter in the future
+
+password="root"
+expect -c "
+spawn ansible-playbook remote_splunk_forwarder.yaml -K
+expect \"BECOME password:\"
+send \"$password\n\"
+interact
+"
+
+# make sure /opt/splunkforwarder is not already installed in remote machine because apt doesn't reinstall it. 
+
+# Another method
+
+cat << EOF > my_inventory.yaml
+all:
+  hosts:
+    server1:
+      ansible_host: 172.24.81.33
+      ansible_user: victim
+      ansible_ssh_private_key_file: ~/.ssh/id_rsa
+EOF
+
+ansible-playbook splunk_config.yaml -i my_inventory.yaml -u victim -K
+
+# We install auditd
+
+password="root"
+expect -c "
+spawn ansible-playbook -i my_inventory.yaml auditd.yaml --ask-become-pass
+expect \"BECOME password:\"
+send \"$password\n\"
+interact
+"
+
+# We install Tango App to help analyze our Linux Honeypot
+
+cd /tmp
+wget -O tango-honeypot-intelligence_21.tgz 'https://cdn.splunkbase.splunk.com/media/private/signed_2666_4252_1668452792.tgz?response-content-disposition=attachment%3Bfilename%3D%22tango-honeypot-intelligence_21.tgz%22&Expires=1680597943&Signature=JExzhr6nwd1FQH8sePsAbQ~LGbe3sNujBgvf2mo~Kdqkd8jo4kB830DQ433TNgaCyJleKxTpdnwAkQIDCODZK8MNfT-bHp10af54IbzaPX-PT7qYdBuLe5mYwTRaePT9JwUpaw-WXjURoYDDDJz52Vt90cnMG~CheY~R-j2dBREeLha-vY0YD0gzbvJM4eqX0eoTxvk3Mdd0RZaEOUWVrfo41l7w8CwkaCfz3mshe1T8NDRqJ3En2DQK8MV74Futv~9ZdnNTngzWvZM5NkezEUMszrG~5GuIGguDbp1VwR2-2TW0RvzaiHjkjxMv2bdsM2gLDIb-5vR3JKwIylpoUw__&Key-Pair-Id=K3GLBBC7R7U34X'
+

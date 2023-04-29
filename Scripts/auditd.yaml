@@ -1,0 +1,41 @@
+---
+- name: Install and configure Auditd
+  hosts: server1
+  become: true
+
+  tasks:
+    - name: Install Auditd
+      apt:
+        name: auditd
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Install Auditd
+      yum:
+        name: auditd
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Configure Auditd rules for web server logs and SSH logs
+      copy:
+        dest: /etc/audit/rules.d/web-server.rules
+        content: |
+          -a always,exit -F path=/var/log/apache2/access.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k web-access-log
+          -a always,exit -F path=/var/log/apache2/error.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k web-error-log
+          -a always,exit -F path=/var/log/auth.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k ssh-log
+
+    - name: Restart Auditd service
+      service:
+        name: auditd
+        state: restarted
+    - name: Configure Splunk Forwarder to monitor Audit log
+      blockinfile:
+        path: /opt/splunkforwarder/etc/system/default/inputs.conf
+        block: |
+          [monitor:///var/log/audit/audit.log]
+          disabled = false
+          index = main
+          sourcetype = linux_auditd
+		  
+    - name: Restart Splunk Forwarder
+      command: /opt/splunkforwarder/bin/splunk restart

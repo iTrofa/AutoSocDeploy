@@ -1,0 +1,19 @@
+- name: Install Tango Honeypot Intelligence addon
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Extract addon file
+      unarchive:
+        src: /tmp/tango-honeypot-intelligence_21.tgz
+        dest: /opt/splunk/etc/apps/
+        creates: /opt/splunk/etc/apps/tango
+      become: true
+      become_user: splunk
+
+    - name: Change ownership of tango directory
+      file:
+        path: /opt/splunk/etc/apps/tango
+        owner: splunk
+        group: splunk
+        recurse: yes

@@ -1,0 +1,58 @@
+---
+- name: Installer Splunk
+  hosts: localhost
+  become: true
+  vars:
+    splunk_version: "9.0.4"
+    splunk_filename: "splunk-{{ splunk_version }}-de405f4a7979-linux-2.6-amd64.deb"
+    splunk_download_url: "https://download.splunk.com/products/splunk/releases/{{ splunk_version }}/linux/{{ splunk_filename }}"
+
+  tasks:
+    # Installer les dépendances nécessaires pour l'installation de Splunk
+    - name: Installer les dépendances pour Splunk
+      apt:
+        name: ["apt-transport-https", "ca-certificates", "wget", "gnupg2"]
+        state: present
+
+    # Télécharger le package d'installation de Splunk à partir du site web de Splunk
+    - name: Télécharger le package d'installation de Splunk
+      get_url:
+        url: "{{ splunk_download_url }}"
+        dest: "/tmp/{{ splunk_filename }}"
+
+    # Extraire le package d'installation de Splunk
+    - name: Extraire le package d'installation de Splunk
+      command: dpkg -i /tmp/{{ splunk_filename }}
+
+    # Installer Splunk
+    - name: Installer Splunk
+      command: /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Admin123
+
+    # Configurer Splunk
+    - name: Configurer Splunk
+      command: /opt/splunk/bin/splunk enable boot-start
+
+    - name: Vérifier si le répertoire existe
+      stat:
+        path: /opt/splunk/etc/apps/search/local
+      register: dir_result
+
+    - name: Créer le répertoire s'il n'existe pas
+      file:
+        path: /opt/splunk/etc/apps/search/local
+        state: directory
+      when: not dir_result.stat.exists
+
+    # Vérifier si le fichier inputs.conf existe
+    - name: Vérifier si le fichier inputs.conf existe
+      stat:
+        path: /opt/splunk/etc/apps/search/local/inputs.conf
+      register: file_result
+
+    - name: Créer le fichier inputs.conf s'il n'existe pas
+      copy:
+        content: |
+         [splunktcp://9997]
+         connection_host = ip
+        dest: /opt/splunk/etc/apps/search/local/inputs.conf
+      when: not file_result.stat.exists
