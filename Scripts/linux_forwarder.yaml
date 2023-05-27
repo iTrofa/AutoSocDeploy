@@ -1,8 +1,10 @@
 ---
 - name: Installer le forwarder Splunk
-  hosts: my_servers
+  hosts: "{{ Linux_ip }}"
   become: true
   vars:
+    # StrictHostKeyChecking = no; to deal with SSH first connection fingerprints. 
+    ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
     splunkforwarder_version: "9.0.4"
     splunkforwarder_filename: "splunkforwarder-{{ splunkforwarder_version }}-de405f4a7979-linux-2.6-amd64.deb"
     splunkforwarder_download_url: "https://download.splunk.com/products/universalforwarder/releases/{{ splunkforwarder_version }}/linux/{{ splunkforwarder_filename }}"
@@ -21,8 +23,7 @@
         dest: "/tmp/{{ splunkforwarder_filename }}"
 
     # Installer le forwarder Splunk
-    - name: Installer ou reinstaller le forwarder Splunk
+    - name: Installer ou réinstaller le forwarder Splunk
       apt:
         deb: "/tmp/{{ splunkforwarder_filename }}"
         state: present
-   

@@ -1,4 +1,6 @@
-- hosts: all
+---
+- name: Configurer le Linux forwarder Splunk
+  hosts: "{{ Linux_ip }}"
   tasks:
     - name: Install required packages
       apt:
@@ -18,9 +20,9 @@
           defaultGroup = default-autolb-group
 
           [tcpout:default-autolb-group]
-          server = 172.24.81.35:9997
+          server = {{ Splunk_Server }}:9997
 
-          [tcpout-server://172.24.81.35:9997]
+          [tcpout-server://{{ Splunk_Server }}:9997]
       become: true
 
     - name: Accept Splunk Forwarder license

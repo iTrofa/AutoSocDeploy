@@ -1,0 +1,28 @@
+- name: Installer le forwarder Splunk sur Windows
+  hosts: "{{ windows_ip }}"
+  gather_facts: false
+  vars:
+    splunkforwarder_version: "9.0.4"
+    splunkforwarder_filename: "splunkforwarder-{{ splunkforwarder_version }}-de405f4a7979-x64-release.msi"
+    splunkforwarder_download_url: "https://download.splunk.com/products/universalforwarder/releases/{{ splunkforwarder_version }}/windows/{{ splunkforwarder_filename }}"
+  tasks:
+    # Télécharger le package d'installation du forwarder Splunk à partir du site web de Splunk
+    - name: Télécharger le package d'installation du forwarder Splunk
+      win_get_url:
+        url: "{{ splunkforwarder_download_url }}"
+        dest: "C:\\Users\\trofa\\Downloads\\{{ splunkforwarder_filename }}"
+        connection_username: "{{ windows_username }}"
+        connection_password: "{{ windows_password }}"
+        winrm_transport: basic
+        validate_certs: false
+
+    # Installer le forwarder Splunk
+    - name: Installer le forwarder Splunk
+      win_package:
+        path: "C:\\Users\\trofa\\Downloads\\{{ splunkforwarder_filename }}"
+        product_id: "7B3E3A33-C7D9-46A9-9AEE-68C5256FD092"
+        arguments: "/quiet /norestart"
+        connection_username: "{{ windows_username }}"
+        connection_password: "{{ windows_password }}"
+        winrm_transport: basic
+        validate_certs: false

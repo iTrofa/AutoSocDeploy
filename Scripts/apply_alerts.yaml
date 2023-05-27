@@ -1,0 +1,28 @@
+---
+- name: Apply alert rules on Splunk from file
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Create directories for savedsearches.conf
+      file:
+        path: /opt/splunk/etc/users/admin/search/local/
+        state: directory
+        mode: '0755'
+
+    - name: Create savedsearches.conf file
+      file:
+        path: /opt/splunk/etc/users/admin/search/local/savedsearches.conf
+        state: touch
+        mode: '0644'
+
+    - name: Append alert.txt content to savedsearches.conf
+      local_action:
+        module: lineinfile
+        path: /opt/splunk/etc/users/admin/search/local/savedsearches.conf
+        line: "{{ lookup('file', '/root/ansible_playbooks/splunk_alerts.conf') }}"
+        insertafter: EOF
+        state: present
+
+    - name: Restart Splunk
+      command: /opt/splunk/bin/splunk restart

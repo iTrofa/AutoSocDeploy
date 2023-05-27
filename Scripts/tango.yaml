@@ -1,6 +1,6 @@
 - name: Install Tango Honeypot Intelligence addon
   hosts: localhost
-  become: yes
+  connection: local
 
   tasks:
     - name: Extract addon file

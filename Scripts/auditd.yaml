@@ -1,6 +1,6 @@
 ---
 - name: Install and configure Auditd
-  hosts: server1
+  hosts: "{{ Linux_ip }}"
   become: true
 
   tasks:
@@ -20,10 +20,8 @@
       copy:
         dest: /etc/audit/rules.d/web-server.rules
         content: |
-          -a always,exit -F path=/var/log/apache2/access.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k web-access-log
-          -a always,exit -F path=/var/log/apache2/error.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k web-error-log
           -a always,exit -F path=/var/log/auth.log -F perm=rwa -F auid>=1000 -F auid!=4294967295 -k ssh-log
-
+          
     - name: Restart Auditd service
       service:
         name: auditd
@@ -36,6 +34,6 @@
           disabled = false
           index = main
           sourcetype = linux_auditd
-		  
+
     - name: Restart Splunk Forwarder
       command: /opt/splunkforwarder/bin/splunk restart
