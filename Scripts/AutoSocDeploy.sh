@@ -73,6 +73,11 @@ cd /root/ansible_playbooks/
 
 ansible-playbook splunk_install.yaml
 
+# we put Splunk in english
+chmod +w /opt/splunk/lib/python3.7/site-packages/splunk/appserver/mrsparkle/lib/util.py
+sed -i '1679s/locale = "%s-%s" % (locale\[0\], locale1) if locale1 else locale\[0\]/locale = "en-US"/' /opt/splunk/lib/python3.7/site-packages/splunk/appserver/mrsparkle/lib/util.py
+/opt/splunk/bin/splunk restart
+
 # Here we will ask for ip of remote host
 
 # make ansible connect over ssh key
@@ -268,20 +273,30 @@ else
 fi
 
 
-#!/bin/bash
+cd /root
 
 # SSH into the Windows machine and execute the registry file
-ssh user@windows_machine "regedit /s C:\path\to\your\file.reg"
+# Check Windows OpenSSH server is set to auto start after reboot
+sshpass -p Admin123 scp -o StrictHostKeyChecking=no forwarder_service.reg "trofa@192.168.1.47:C:\\Users\\trofa\\Desktop\\forwarder_service.reg"
+
+## Before sending zip file we might have to unzip it locally on linux edit the inputs file config it in Linux rezip it and then send zip file to Windows ##
+sshpass -p Admin123 scp -o StrictHostKeyChecking=no SplunkUniversalForwarder.zip "trofa@192.168.1.47:C:\\Users\\trofa\\Desktop\\SplunkUniversalForwarder.zip"
+
+sshpass -p Admin123 ssh -o StrictHostKeyChecking=no trofa@192.168.1.47 "regedit /s C:\\Users\\trofa\\Desktop\\forwarder_service.reg"
+
+# Install 7z on remote Windows machine beforehand
+sshpass -p Admin123 ssh -o StrictHostKeyChecking=no trofa@192.168.1.47 "\"C:\\Program Files\\7-Zip\\7z.exe\" x \"C:\\Users\\trofa\\Desktop\\splunkuniversalforwarder.zip\" -o\"C:\\\""
 
 # Reboot the Windows machine
-ssh user@windows_machine "shutdown /r /t 0"
+sshpass -p Admin123 ssh trofa@192.168.1.47 "shutdown /r /t 0"
 
 # Wait for the Windows machine to become accessible again
 echo "Waiting for Windows machine to restart..."
-sleep 120  # Adjust the sleep duration as needed
+sleep 30  # Adjust the sleep duration as needed
 
 # SSH into the Windows machine and start Splunk
-ssh user@windows_machine "C:\temp\splunk\bin\splunk start"
+# make sure honeypot is not taking port 8089
+sshpass -p Admin123 ssh trofa@192.168.1.47 "C:\\splunkuniversalforwarder\\bin\\splunk start"
 
 unset $add_Windows_server
 unset $SSH_port
