@@ -25,6 +25,33 @@
           [tcpout-server://{{ Splunk_Server }}:9997]
       become: true
 
+    # Vérifier si le dossier local existe
+    - name: Vérifier si le dossier local existe
+      stat:
+        path: /opt/splunkforwarder/etc/apps/search/local
+      register: folder_result
+
+    - name: Créer le dossier local s'il n'existe pas
+      file:
+        path: /opt/splunkforwarder/etc/apps/search/local
+        state: directory
+      when: not folder_result.stat.exists
+
+    # Vérifier si le fichier inputs.conf existe
+    - name: Vérifier si le fichier inputs.conf existe
+      stat:
+        path: /opt/splunkforwarder/etc/apps/search/local/inputs.conf
+      register: file_result
+
+    - name: Créer le fichier inputs.conf s'il n'existe pas
+      copy:
+        content: |
+         [monitor:///home/cowrie/cowrie/var/log/cowrie]
+         sourcetype=cowrie
+         disabled = false
+        dest: /opt/splunkforwarder/etc/apps/search/local/inputs.conf
+      when: not file_result.stat.exists
+
     - name: Accept Splunk Forwarder license
       command: /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd Admin123
       become: true
