@@ -73,10 +73,7 @@ cd /root/ansible_playbooks/
 
 ansible-playbook splunk_install.yaml
 
-# we put Splunk in english
-chmod +w /opt/splunk/lib/python3.7/site-packages/splunk/appserver/mrsparkle/lib/util.py
-sed -i '1679s/locale = "%s-%s" % (locale\[0\], locale1) if locale1 else locale\[0\]/locale = "en-US"/' /opt/splunk/lib/python3.7/site-packages/splunk/appserver/mrsparkle/lib/util.py
-/opt/splunk/bin/splunk restart
+
 
 # Here we will ask for ip of remote host
 
@@ -140,7 +137,14 @@ done
 
 mv /root/ansible_playbooks/tango-honeypot-intelligence_21.tgz /tmp/tango-honeypot-intelligence_21.tgz
 ansible-playbook tango.yaml
+
+# we put Splunk in english
+chmod +w /opt/splunk/lib/python3.7/site-packages/splunk/appserver/mrsparkle/lib/util.py
+sed -i '1679s/locale = "%s-%s" % (locale\[0\], locale1) if locale1 else locale\[0\]/locale = "en-US"/' /opt/splunk/lib/python3.7/site-packages/splunk/appserver/mrsparkle/lib/util.py
+
 ansible-playbook apply_alerts.yaml
+
+
 
 unset add_Linux_server
 unset SSH_port
