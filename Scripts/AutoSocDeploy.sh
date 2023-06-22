@@ -85,55 +85,9 @@ sed -i '1679s/locale = "%s-%s" % (locale\[0\], locale1) if locale1 else locale\[
 # So we can use password with SSH to send our SSH key
 apt install sshpass -y
 
-read -p "Do you want to add a Linux server? (Yes/No): " add_Linux_server
+#!/bin/bash
 
-if [[ "$add_Linux_server" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-  # Prompt the user to enter the Linux IP address
-  read -p "Enter the Linux IP address: " Linux_ip
-
-  # Prompt the user to enter the SSH port
-  read -p "Enter the SSH port (default is 22): " SSH_port
-  SSH_port=${SSH_port:-22}
-
-  # Prompt the user to enter the username
-  read -p "Enter the Linux username: " Linux_username
-
-  # Prompt the user to enter the password (the -s flag hides the input)
-  read -s -p "Enter the Linux password: " Linux_password
-
-  # Check if the IP address is already in the Ansible inventory file
-  if grep -q $Linux_ip /etc/ansible/hosts; then
-    echo "IP address already exists in the Ansible inventory file."
-  else
-    # Append the IP address to the Ansible inventory file
-    echo -e "\n[$Linux_ip]\n$Linux_ip:$SSH_port ansible_user=$Linux_username ansible_ssh_private_key_file=~/.ssh/id_rsa" >> /etc/ansible/hosts
-  fi
-
-  # Copy SSH key to the Linux server using sshpass for password automation
-  sshpass -p $Linux_password ssh-copy-id -o StrictHostKeyChecking=no -p $SSH_port $Linux_username@$Linux_ip
-
-  # Run the Ansible playbook with the provided variables
-  ansible-playbook linux_forwarder.yaml -e "Linux_ip=$Linux_ip"
-
-  # make sure /opt/splunkforwarder is not already installed in remote machine because apt doesn't reinstall it.
-
-  echo -e "\n[Splunk_Server]" >> /etc/ansible/hosts && echo "$(hostname -I | awk '{print $1}')" >> /etc/ansible/hosts
-
-  ansible-playbook linux_splunk_config.yaml -e "Linux_ip=$Linux_ip"  --extra-vars "Splunk_Server=$(hostname -I | awk '{print $1}')"
-
-  # We install auditd
-
-  ansible-playbook auditd.yaml  -e "Linux_ip=$Linux_ip"
-
-  # We install Tango App to help analyze our Linux Honeypot
-
-  mv /root/ansible_playbooks/tango-honeypot-intelligence_21.tgz /tmp/tango-honeypot-intelligence_21.tgz
-
-elif [[ "$add_Linux_server" =~ ^[Nn]([Oo])?$ ]]; then
-  echo "No Linux server will be added."
-
-else
-  echo "Please enter either Yes or No."
+while true; do
   read -p "Do you want to add a Linux server? (Yes/No): " add_Linux_server
 
   if [[ "$add_Linux_server" =~ ^[Yy]([Ee][Ss])?$ ]]; then
@@ -161,84 +115,108 @@ else
     # Copy SSH key to the Linux server using sshpass for password automation
     sshpass -p $Linux_password ssh-copy-id -o StrictHostKeyChecking=no -p $SSH_port $Linux_username@$Linux_ip
 
-	# Run the Ansible playbook with the provided variables
+    # Run the Ansible playbook with the provided variables
     ansible-playbook linux_forwarder.yaml -e "Linux_ip=$Linux_ip"
-    # make sure /opt/splunkforwarder is not already installed in remote machine because apt doesn't reinstall it.
+    # make sure /opt/splunkforwarder is not already installed on the remote machine because apt doesn't reinstall it.
 
     echo -e "\n[Splunk_Server]" >> /etc/ansible/hosts && echo "$(hostname -I | awk '{print $1}')" >> /etc/ansible/hosts
 
-    ansible-playbook linux_splunk_config.yaml -e "Linux_ip=$Linux_ip"  --extra-vars "Splunk_Server=$(hostname -I | awk '{print $1}')"
+    ansible-playbook linux_splunk_config.yaml -e "Linux_ip=$Linux_ip" --extra-vars "Splunk_Server=$(hostname -I | awk '{print $1}')"
 
-    # We install auditd
+    # Install auditd
+    ansible-playbook auditd.yaml -e "Linux_ip=$Linux_ip"
 
-    ansible-playbook auditd.yaml  -e "Linux_ip=$Linux_ip"
-
-    # We install Tango App to help analyze our Linux Honeypot
-
-    mv /root/ansible_playbooks/tango-honeypot-intelligence_21.tgz /tmp/tango-honeypot-intelligence_21.tgz
+    # sshpass -p $Linux_password ssh -o StrictHostKeyChecking=no -p $SSH_port $Linux_username@$Linux_ip "/opt/splunkforwarder/bin/splunk add monitor /home/cowrie/cowrie/var/log/cowrie/" -auth user:PASS
 
   elif [[ "$add_Linux_server" =~ ^[Nn]([Oo])?$ ]]; then
     echo "No Linux server will be added."
+    break
 
   else
-    echo "Invalid input. No Linux server will be added."
+    echo "Please enter either Yes or No."
   fi
-fi
+done
 
 
+mv /root/ansible_playbooks/tango-honeypot-intelligence_21.tgz /tmp/tango-honeypot-intelligence_21.tgz
+ansible-playbook tango.yaml
 ansible-playbook apply_alerts.yaml
 
-unset $add_Linux_server
-unset $SSH_port
-unset $Linux_ip
-unset $Linux_password
-unset $Linux_username
+unset add_Linux_server
+unset SSH_port
+unset Linux_ip
+unset Linux_password
+unset Linux_username
 
 # Windows
 
-# sshpass windows_cred #command send forwarder .zip / unzip it
-# send registry key
-# either start service or restart it
-# add kfsenslog to monitor
-# restart forwarder by sshpass
-# sysmon ?
+# before OVA make SSH auto started
+# kfsensor disabled on port 8089
+# config Sysmon
 
-if [[ "$add_Windows_server" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-  # Prompt the user to enter the Windows IP address
-  read -p "Enter the Windows IP address: " Windows_ip
+cd /root
+Splunk_Server=$(hostname -I | awk '{print $1}')
+unzip SplunkUniversalForwarder.zip
+cat > SplunkUniversalForwarder/etc/system/local/outputs.conf << EOF
 
-  # Prompt the user to enter the SSH port
-  read -p "Enter the SSH port (default is 22): " SSH_port
-  SSH_port=${SSH_port:-22}
+[tcpout]
+defaultGroup = default-autolb-group
 
-  # Prompt the user to enter the username
-  read -p "Enter the Windows username: " Windows_username
+[tcpout:default-autolb-group]
+server = $Splunk_Server:9997
 
-  # Prompt the user to enter the password (the -s flag hides the input)
-  read -s -p "Enter the Windows password: " Windows_password
+[tcpout-server://$Splunk_Server:9997]
 
-  # Check if the IP address is already in the Ansible inventory file
-  if grep -q $Windows_ip /etc/ansible/hosts; then
-    echo "IP address already exists in the Ansible inventory file."
-  else
-    # Append the IP address to the Ansible inventory file
-    echo -e "\n[$Windows_ip]\n$Windows_ip:$SSH_port ansible_user=$Windows_username ansible_ssh_private_key_file=~/.ssh/id_rsa" >> /etc/ansible/hosts
-  fi
+EOF
 
-  # Copy SSH key to the Linux server using sshpass for password automation
-  sshpass -p $Windows_password ssh-copy-id -o StrictHostKeyChecking=no -p $SSH_port $Windows_username@$Windows_ip
+cat >> SplunkUniversalForwarder/etc/system/default/inputs.conf << EOF
 
-  # We install sysmon?
+[monitor://C:\kfsensor\logs]
+disabled = false
+index = main
+sourcetype = kfsensor
 
-elif [[ "$add_Windows_server" =~ ^[Nn]([Oo])?$ ]]; then
-  echo "No Linux server will be added."
+[monitor://C:\Windows\System32\winevt\Logs\Microsoft-Windows-Sysmon%4Operational.evtx]
+sourcetype = sysmon
+index = main
+disabled = false
 
-else
-  echo "Please enter either Yes or No."
+[WinEventLog://Application]
+disabled = 0
+start_from = oldest
+current_only = 0
+checkpointInterval = 5
+renderXml=true
+
+[WinEventLog://Security]
+disabled = 0
+start_from = oldest
+current_only = 0
+evt_resolve_ad_obj = 1
+checkpointInterval = 5
+blacklist1 = EventCode="4662" Message="Object Type:(?!\s*groupPolicyContainer)"
+blacklist2 = EventCode="566" Message="Object Type:(?!\s*groupPolicyContainer)"
+renderXml=true
+
+[WinEventLog://System]
+disabled = 0
+start_from = oldest
+current_only = 0
+checkpointInterval = 5
+renderXml=true
+EOF
+
+apt install zip -y
+zip -r SplunkUniversalForwarder.zip SplunkUniversalForwarder
+rm -rf SplunkUniversalForwarder
+
+#!/bin/bash
+
+while true; do
   read -p "Do you want to add a Windows server? (Yes/No): " add_Windows_server
 
   if [[ "$add_Windows_server" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-    # Prompt the user to enter the Linux IP address
+    # Prompt the user to enter the Windows IP address
     read -p "Enter the Windows IP address: " Windows_ip
 
     # Prompt the user to enter the SSH port
@@ -251,55 +229,46 @@ else
     # Prompt the user to enter the password (the -s flag hides the input)
     read -s -p "Enter the Windows password: " Windows_password
 
-    # Check if the IP address is already in the Ansible inventory file
-    if grep -q $Windows_ip /etc/ansible/hosts; then
-      echo "IP address already exists in the Ansible inventory file."
-    else
-      # Append the IP address to the Ansible inventory file
-      echo -e "\n[$Windows_ip]\n$Windows_ip:$SSH_port ansible_user=$Windows_username ansible_ssh_private_key_file=~/.ssh/id_rsa" >> /etc/ansible/hosts
-    fi
+    # SSH into the Windows machine and execute the registry file
+    # Check Windows OpenSSH server is set to auto start after reboot
+    sshpass -p $Windows_password scp -o StrictHostKeyChecking=no forwarder_service.reg "$Windows_username@$Windows_ip:C:\\Users\\$Windows_username\\Desktop\\forwarder_service.reg"
 
-    # Copy SSH key to the Linux server using sshpass for password automation
-    sshpass -p $Windows_password ssh-copy-id -o StrictHostKeyChecking=no -p $SSH_port $Windows_username@$Windows_ip
+    ## Before sending the zip file, we might have to unzip it locally on Linux, edit the inputs file, configure it in Linux, rezip it, and then send the zip file to Windows ##
 
-    # We install sysmon ?
+    sshpass -p $Windows_password scp -o StrictHostKeyChecking=no SplunkUniversalForwarder.zip "$Windows_username@$Windows_ip:C:\\Users\\$Windows_username\\Desktop\\SplunkUniversalForwarder.zip"
+
+    sshpass -p $Windows_password ssh -o StrictHostKeyChecking=no $Windows_username@$Windows_ip "regedit /s C:\\Users\\$Windows_username\\Desktop\\forwarder_service.reg"
+
+    # Install 7z on the remote Windows machine beforehand
+    sshpass -p $Windows_password ssh -o StrictHostKeyChecking=no $Windows_username@$Windows_ip "\"C:\\Program Files\\7-Zip\\7z.exe\" x \"C:\\Users\\$Windows_username\\Desktop\\splunkuniversalforwarder.zip\" -o\"C:\\\""
+
+    # Reboot the Windows machine
+    sshpass -p $Windows_password ssh $Windows_username@$Windows_ip "shutdown /r /t 0"
+
+    # Wait for the Windows machine to become accessible again
+    echo "Waiting for Windows machine to restart..."
+    sleep 30  # Adjust the sleep duration as needed
+
+    # SSH into the Windows machine and start Splunk
+    # Make sure honeypot is not taking port 8089
+    # We start in case it should start by itself
+    sshpass -p $Windows_password ssh $Windows_username@$Windows_ip "C:\\splunkuniversalforwarder\\bin\\splunk start"
 
   elif [[ "$add_Windows_server" =~ ^[Nn]([Oo])?$ ]]; then
     echo "No Windows server will be added."
+    break
 
   else
-    echo "Invalid input. No Windows server will be added."
+    echo "Please enter either Yes or No."
   fi
-fi
+done
 
 
-cd /root
-
-# SSH into the Windows machine and execute the registry file
-# Check Windows OpenSSH server is set to auto start after reboot
-sshpass -p Admin123 scp -o StrictHostKeyChecking=no forwarder_service.reg "trofa@192.168.1.47:C:\\Users\\trofa\\Desktop\\forwarder_service.reg"
-
-## Before sending zip file we might have to unzip it locally on linux edit the inputs file config it in Linux rezip it and then send zip file to Windows ##
-sshpass -p Admin123 scp -o StrictHostKeyChecking=no SplunkUniversalForwarder.zip "trofa@192.168.1.47:C:\\Users\\trofa\\Desktop\\SplunkUniversalForwarder.zip"
-
-sshpass -p Admin123 ssh -o StrictHostKeyChecking=no trofa@192.168.1.47 "regedit /s C:\\Users\\trofa\\Desktop\\forwarder_service.reg"
-
-# Install 7z on remote Windows machine beforehand
-sshpass -p Admin123 ssh -o StrictHostKeyChecking=no trofa@192.168.1.47 "\"C:\\Program Files\\7-Zip\\7z.exe\" x \"C:\\Users\\trofa\\Desktop\\splunkuniversalforwarder.zip\" -o\"C:\\\""
-
-# Reboot the Windows machine
-sshpass -p Admin123 ssh trofa@192.168.1.47 "shutdown /r /t 0"
-
-# Wait for the Windows machine to become accessible again
-echo "Waiting for Windows machine to restart..."
-sleep 30  # Adjust the sleep duration as needed
-
-# SSH into the Windows machine and start Splunk
-# make sure honeypot is not taking port 8089
-sshpass -p Admin123 ssh trofa@192.168.1.47 "C:\\splunkuniversalforwarder\\bin\\splunk start"
-
-unset $add_Windows_server
-unset $SSH_port
-unset $Windows_ip
-unset $Windows_password
-unset $Windows_username
+# install sysmon
+# install psexec en avance C:\Users\trofa\Downloads\PSTools\psexec.exe -s cmd.exe /c "C:\Users\trofa\Desktop\Sysmon\Sysmon -accepteula -i C:\Users\trofa\Desktop\Sysmon\sysmonconfig.xml"
+# on envoie zip  de psexec + sysmon (on doit accepter eula des 2)
+unset add_Windows_server
+unset SSH_port
+unset Windows_ip
+unset Windows_password
+unset Windows_username
