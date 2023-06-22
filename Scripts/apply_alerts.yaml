@@ -24,5 +24,8 @@
         insertafter: EOF
         state: present
 
-    - name: Restart Splunk
-      command: /opt/splunk/bin/splunk restart
+    - name: Stop Splunk
+      command: /opt/splunk/bin/splunk stop
+
+    - name: Start Splunk
+      command: /opt/splunk/bin/splunk start
